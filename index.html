@@ -10,9 +10,9 @@
   --green: #2ecc71;
   --red: #e74c3c;
   --pink: #ff2d55;
-  --card-bg: rgba(255,255,255,0.95);
+  --card-bg: rgba(255,255,255,0.96);
   --shadow: 0 30px 60px rgba(0,0,0,0.25);
-  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * { box-sizing: border-box; }
@@ -43,12 +43,10 @@ body {
 
 /* Word animation */
 .word {
-  font-weight: 700;
-  color: #e91e63;
   opacity: 0;
   transform: translateY(-120px);
-  animation: fall 0.9s var(--ease-apple) forwards;
-  text-shadow: 4px 4px 12px rgba(0,0,0,0.25);
+  animation: fall 0.9s var(--ease) forwards;
+  font-weight: 700;
 }
 
 @keyframes fall {
@@ -58,14 +56,16 @@ body {
 /* Question */
 .question {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 1vw;
   margin-top: 6vh;
 }
 
 .question .word {
   font-size: 10vh;
+  color: #e91e63;
+  text-shadow: 4px 4px 12px rgba(0,0,0,0.25);
 }
 
 /* Button zone */
@@ -76,22 +76,23 @@ body {
   transform: translateX(-50%) translateY(-200px);
   opacity: 0;
   display: flex;
+  align-items: center;
   gap: 4vw;
-  animation: drop 1s var(--ease-apple) forwards;
-  animation-delay: 0s;
-}
-
-@media (max-width: 600px) {
-  .button-zone {
-    flex-direction: column;
-    gap: 3vh;
-  }
+  animation: drop 1s var(--ease) forwards;
 }
 
 @keyframes drop {
   to {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
+  }
+}
+
+/* Mobile stacking */
+@media (max-width: 600px) {
+  .button-zone {
+    flex-direction: column;
+    gap: 3vh;
   }
 }
 
@@ -102,15 +103,15 @@ button {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-  transition: transform 0.2s var(--ease-apple);
+  box-shadow: 0 14px 26px rgba(0,0,0,0.25);
+  transition: transform 0.2s var(--ease);
 }
 
 button:active {
   transform: scale(0.96);
 }
 
-/* YES button */
+/* YES */
 #yesBtn {
   height: 10vh;
   padding: 0 6vh;
@@ -142,14 +143,14 @@ button:active {
 }
 
 /* Heart */
-.heart-icon {
+.heart {
   color: var(--pink);
   margin-left: 1vh;
   display: inline-block;
-  transition: transform 1s var(--ease-apple);
+  transition: transform 1.2s var(--ease), opacity 0.6s var(--ease);
 }
 
-/* NO button */
+/* NO (locked size) */
 #noBtn {
   height: 4vh;
   width: 10vh;
@@ -160,34 +161,33 @@ button:active {
 }
 
 /* Final message */
-.final-message {
+.final {
   display: none;
-  margin-top: 8vh;
   justify-content: center;
   flex-wrap: wrap;
   gap: 2vw;
+  margin-top: 10vh;
 }
 
-.final-message .word {
+.final .word {
   font-size: 20vh;
   color: var(--green);
+  text-shadow: 4px 4px 12px rgba(0,0,0,0.25);
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<div class="card" id="card">
   <div class="question" id="question"></div>
 
   <div class="button-zone" id="buttonZone">
-    <button id="yesBtn">
-      YES <span class="heart-icon" id="heart">❤️</span>
-    </button>
+    <button id="yesBtn">YES <span class="heart" id="heart">❤️</span></button>
     <button id="noBtn">no</button>
   </div>
 
-  <div class="final-message" id="finalMessage"></div>
+  <div class="final" id="final"></div>
 </div>
 
 <!-- Sounds -->
@@ -198,17 +198,18 @@ button:active {
 const questionText = "Will you be my Valentine?";
 const finalText = "Thank you for choosing me";
 
+const card = document.getElementById("card");
 const questionEl = document.getElementById("question");
-const finalEl = document.getElementById("finalMessage");
 const buttonZone = document.getElementById("buttonZone");
 const yesBtn = document.getElementById("yesBtn");
 const noBtn = document.getElementById("noBtn");
 const heart = document.getElementById("heart");
+const finalEl = document.getElementById("final");
 
 const evilSound = document.getElementById("evilSound");
 const yesSound = document.getElementById("yesSound");
 
-/* Animate question */
+/* Question animation */
 questionText.split(" ").forEach((word, i) => {
   const span = document.createElement("span");
   span.className = "word";
@@ -217,18 +218,18 @@ questionText.split(" ").forEach((word, i) => {
   questionEl.appendChild(span);
 });
 
-/* Drop buttons after text */
-setTimeout(() => {
-  buttonZone.style.animationDelay = "0s";
-}, questionText.split(" ").length * 350 + 400);
-
-/* NO dodge */
+/* NO button dodge — stays inside card */
 function moveNo() {
+  const pad = 12;
+  const maxX = card.clientWidth - noBtn.offsetWidth - pad;
+  const maxY = card.clientHeight - noBtn.offsetHeight - pad;
+
+  noBtn.style.position = "absolute";
+  noBtn.style.left = Math.random() * maxX + "px";
+  noBtn.style.top = Math.random() * maxY + "px";
+
   evilSound.currentTime = 0;
   evilSound.play();
-  noBtn.style.position = "absolute";
-  noBtn.style.left = Math.random() * 70 + "vw";
-  noBtn.style.top = Math.random() * 60 + "vh";
 }
 
 noBtn.addEventListener("mouseover", moveNo);
@@ -240,11 +241,12 @@ yesBtn.addEventListener("click", () => {
   yesSound.play();
 
   heart.style.transform = "scale(6)";
-  setTimeout(() => heart.style.opacity = "0", 800);
+  heart.style.opacity = "0";
 
   setTimeout(() => {
-    buttonZone.style.display = "none";
+    card.innerHTML = "";
     finalEl.style.display = "flex";
+    card.appendChild(finalEl);
 
     finalText.split(" ").forEach((word, i) => {
       const span = document.createElement("span");
