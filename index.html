@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Valentine 💘</title>
 
 <style>
 :root {
   --green: #2ecc71;
   --red: #e74c3c;
-  --card-bg: #ffffffee;
+  --card-bg: rgba(255,255,255,0.95);
   --border: #e0e0e0;
-  --shadow: 0 20px 40px rgba(0,0,0,0.25);
+  --shadow: 0 25px 50px rgba(0,0,0,0.25);
+  --light-shadow: -6px -6px 12px rgba(255,255,255,0.8),
+                  6px 6px 16px rgba(0,0,0,0.25);
 }
 
 * {
@@ -22,7 +23,7 @@
 body {
   margin: 0;
   height: 100vh;
-  background: radial-gradient(circle at top, #ff9a9e, #fad0c4);
+  background: radial-gradient(circle at top right, #ff9a9e, #fad0c4);
   font-family: "Segoe UI", Roboto, sans-serif;
   display: flex;
   justify-content: center;
@@ -30,25 +31,44 @@ body {
   overflow: hidden;
 }
 
-/* Lightning-style card */
+/* Card = 80% viewport */
 .card {
   position: relative;
-  width: min(92vw, 420px);
-  height: min(75vh, 340px);
+  width: 80vw;
+  height: 80vh;
   background: var(--card-bg);
-  border-radius: 24px;
+  border-radius: 28px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  padding: 32px 24px;
+  padding: 4vh 3vw;
   text-align: center;
+  overflow: hidden;
 }
 
-/* Title */
-h1 {
-  margin: 0;
-  font-size: 1.6rem;
+/* Question */
+.question {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1vw;
+  margin-top: 6vh;
+}
+
+.word {
+  font-size: 10vh; /* 10% of window */
+  font-weight: 700;
   color: #e91e63;
-  letter-spacing: 0.4px;
+  opacity: 0;
+  transform: translateY(-100px);
+  animation: fall 0.8s ease forwards;
+  text-shadow: 4px 4px 10px rgba(0,0,0,0.25);
+}
+
+@keyframes fall {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Buttons */
@@ -56,69 +76,79 @@ button {
   position: absolute;
   border: none;
   border-radius: 999px;
-  font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  box-shadow: var(--light-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 button:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
-/* YES = big pill */
+/* YES = 10% window */
 #yesBtn {
+  height: 10vh;
+  padding: 0 6vh;
+  font-size: 3vh;
   background: var(--green);
   color: white;
-  padding: 16px 48px;
-  bottom: 40px;
+  font-weight: 700;
   left: 50%;
-  transform: translateX(-50%);
-  font-weight: 600;
+  bottom: 6vh;
+  transform: translateX(-50%) translateY(-200px);
+  opacity: 0;
 }
 
-/* NO = small pill */
+/* NO = 4% window (LOCKED) */
 #noBtn {
+  height: 4vh;
+  width: 10vh;
+  font-size: 1.6vh;
   background: var(--red);
   color: white;
-  padding: 10px 20px;
-  font-size: 14px;
-  bottom: 110px;
+  font-weight: 600;
   left: 50%;
+  top: 50%;
   transform: translateX(-50%);
+}
+
+/* Button drop animation */
+.drop {
+  animation: drop 0.8s ease forwards;
+}
+
+@keyframes drop {
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Success message */
 .message {
   display: none;
-  font-size: 1.3rem;
+  font-size: 4vh;
   color: var(--green);
-  margin-top: 70px;
-  animation: rise 1.2s ease forwards;
+  margin-top: 10vh;
+  text-shadow: 3px 3px 10px rgba(0,0,0,0.25);
+  animation: fadeUp 1s ease forwards;
 }
 
-@keyframes rise {
-  from { opacity: 0; transform: translateY(20px); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Floating hearts */
+/* Hearts */
 .heart {
   position: absolute;
-  font-size: 20px;
+  font-size: 3vh;
   animation: float 6s linear forwards;
-  opacity: 0.9;
 }
 
 @keyframes float {
-  from {
-    transform: translateY(100vh) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-10vh) scale(1.6);
-    opacity: 0;
-  }
+  from { transform: translateY(100vh); opacity: 1; }
+  to { transform: translateY(-10vh); opacity: 0; }
 }
 </style>
 </head>
@@ -126,7 +156,7 @@ button:active {
 <body>
 
 <div class="card">
-  <h1>Will you be my Valentine? 💝</h1>
+  <div class="question" id="question"></div>
 
   <button id="yesBtn">YES 💚</button>
   <button id="noBtn">no</button>
@@ -141,52 +171,73 @@ button:active {
 <audio id="yesSound" src="https://www.soundjay.com/human/sounds/applause-8.mp3"></audio>
 
 <script>
-const noBtn = document.getElementById("noBtn");
+const text = "Will you be my Valentine?";
+const questionEl = document.getElementById("question");
 const yesBtn = document.getElementById("yesBtn");
+const noBtn = document.getElementById("noBtn");
 const card = document.querySelector(".card");
 const message = document.getElementById("message");
 const evilSound = document.getElementById("evilSound");
 const yesSound = document.getElementById("yesSound");
 
+/* Word-by-word animation */
+text.split(" ").forEach((word, i) => {
+  const span = document.createElement("span");
+  span.className = "word";
+  span.textContent = word;
+  span.style.animationDelay = `${i * 0.35}s`;
+  questionEl.appendChild(span);
+});
+
+/* Drop buttons after text */
+setTimeout(() => {
+  yesBtn.classList.add("drop");
+  noBtn.classList.add("drop");
+}, text.split(" ").length * 350 + 300);
+
+/* Overlap-safe NO movement */
+function overlaps(a, b) {
+  return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+}
+
 function moveNo() {
-  const maxX = card.clientWidth - noBtn.offsetWidth;
-  const maxY = card.clientHeight - noBtn.offsetHeight;
+  const pad = 10;
+  const maxX = card.clientWidth - noBtn.offsetWidth - pad;
+  const maxY = card.clientHeight - noBtn.offsetHeight - pad;
 
-  const x = Math.random() * maxX;
-  const y = Math.random() * maxY;
+  const yesRect = yesBtn.getBoundingClientRect();
+  let tries = 0;
 
-  noBtn.style.left = x + "px";
-  noBtn.style.top = y + "px";
+  do {
+    noBtn.style.left = Math.random() * maxX + "px";
+    noBtn.style.top = Math.random() * maxY + "px";
+    tries++;
+  } while (overlaps(noBtn.getBoundingClientRect(), yesRect) && tries < 50);
 
   evilSound.currentTime = 0;
   evilSound.play();
 }
 
 noBtn.addEventListener("mouseover", moveNo);
-noBtn.addEventListener("touchstart", moveNo);
 noBtn.addEventListener("click", moveNo);
+noBtn.addEventListener("touchstart", moveNo);
 
 yesBtn.addEventListener("click", () => {
   yesSound.play();
   yesBtn.style.display = "none";
   noBtn.style.display = "none";
   message.style.display = "block";
-  launchHearts();
-});
 
-function launchHearts() {
-  for (let i = 0; i < 30; i++) {
-    const heart = document.createElement("div");
-    heart.className = "heart";
-    heart.innerHTML = "❤️";
-    heart.style.left = Math.random() * 100 + "vw";
-    heart.style.fontSize = (18 + Math.random() * 20) + "px";
-    heart.style.animationDuration = (4 + Math.random() * 3) + "s";
-    document.body.appendChild(heart);
-
-    setTimeout(() => heart.remove(), 7000);
+  for (let i = 0; i < 25; i++) {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.innerHTML = "❤️";
+    h.style.left = Math.random() * 100 + "vw";
+    h.style.animationDuration = 4 + Math.random() * 3 + "s";
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 7000);
   }
-}
+});
 </script>
 
 </body>
