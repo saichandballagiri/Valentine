@@ -41,7 +41,7 @@ body {
   overflow: hidden;
 }
 
-/* Word animation */
+/* Falling words */
 .word {
   opacity: 0;
   transform: translateY(-120px);
@@ -88,7 +88,6 @@ body {
   }
 }
 
-/* Mobile stacking */
 @media (max-width: 600px) {
   .button-zone {
     flex-direction: column;
@@ -102,14 +101,11 @@ button {
   border-radius: 999px;
   cursor: pointer;
   position: relative;
-  overflow: hidden;
   box-shadow: 0 14px 26px rgba(0,0,0,0.25);
   transition: transform 0.2s var(--ease);
 }
 
-button:active {
-  transform: scale(0.96);
-}
+button:active { transform: scale(0.96); }
 
 /* YES */
 #yesBtn {
@@ -119,35 +115,6 @@ button:active {
   font-weight: 700;
   background: var(--green);
   color: white;
-}
-
-/* Shimmer */
-#yesBtn::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -150%;
-  width: 60%;
-  height: 200%;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255,255,255,0.6),
-    transparent
-  );
-  animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-  to { left: 150%; }
-}
-
-/* Heart */
-.heart {
-  color: var(--pink);
-  margin-left: 1vh;
-  display: inline-block;
-  transition: transform 1.2s var(--ease), opacity 0.6s var(--ease);
 }
 
 /* NO (locked size) */
@@ -160,7 +127,7 @@ button:active {
   font-weight: 600;
 }
 
-/* Final message */
+/* Final text */
 .final {
   display: none;
   justify-content: center;
@@ -183,14 +150,13 @@ button:active {
   <div class="question" id="question"></div>
 
   <div class="button-zone" id="buttonZone">
-    <button id="yesBtn">YES <span class="heart" id="heart">❤️</span></button>
+    <button id="yesBtn">YES <span style="color:#ff2d55">❤️</span></button>
     <button id="noBtn">no</button>
   </div>
 
   <div class="final" id="final"></div>
 </div>
 
-<!-- Sounds -->
 <audio id="evilSound" src="https://www.myinstants.com/media/sounds/evil-laugh.mp3"></audio>
 <audio id="yesSound" src="https://www.soundjay.com/human/sounds/applause-8.mp3"></audio>
 
@@ -200,16 +166,14 @@ const finalText = "Thank you for choosing me";
 
 const card = document.getElementById("card");
 const questionEl = document.getElementById("question");
-const buttonZone = document.getElementById("buttonZone");
 const yesBtn = document.getElementById("yesBtn");
 const noBtn = document.getElementById("noBtn");
-const heart = document.getElementById("heart");
 const finalEl = document.getElementById("final");
 
 const evilSound = document.getElementById("evilSound");
 const yesSound = document.getElementById("yesSound");
 
-/* Question animation */
+/* Build question */
 questionText.split(" ").forEach((word, i) => {
   const span = document.createElement("span");
   span.className = "word";
@@ -218,15 +182,25 @@ questionText.split(" ").forEach((word, i) => {
   questionEl.appendChild(span);
 });
 
-/* NO button dodge — stays inside card */
+/* Safe teleport zone logic */
 function moveNo() {
-  const pad = 12;
-  const maxX = card.clientWidth - noBtn.offsetWidth - pad;
-  const maxY = card.clientHeight - noBtn.offsetHeight - pad;
+  const cardRect = card.getBoundingClientRect();
+  const qRect = questionEl.getBoundingClientRect();
+  const yesRect = yesBtn.getBoundingClientRect();
+
+  const padding = 12;
+
+  const minX = padding;
+  const maxX = cardRect.width - noBtn.offsetWidth - padding;
+
+  const minY = qRect.bottom - cardRect.top + padding;
+  const maxY = yesRect.top - cardRect.top - noBtn.offsetHeight - padding;
+
+  if (maxY <= minY) return;
 
   noBtn.style.position = "absolute";
-  noBtn.style.left = Math.random() * maxX + "px";
-  noBtn.style.top = Math.random() * maxY + "px";
+  noBtn.style.left = Math.random() * (maxX - minX) + minX + "px";
+  noBtn.style.top = Math.random() * (maxY - minY) + minY + "px";
 
   evilSound.currentTime = 0;
   evilSound.play();
@@ -236,26 +210,20 @@ noBtn.addEventListener("mouseover", moveNo);
 noBtn.addEventListener("click", moveNo);
 noBtn.addEventListener("touchstart", moveNo);
 
-/* YES click */
+/* YES */
 yesBtn.addEventListener("click", () => {
   yesSound.play();
+  card.innerHTML = "";
+  finalEl.style.display = "flex";
+  card.appendChild(finalEl);
 
-  heart.style.transform = "scale(6)";
-  heart.style.opacity = "0";
-
-  setTimeout(() => {
-    card.innerHTML = "";
-    finalEl.style.display = "flex";
-    card.appendChild(finalEl);
-
-    finalText.split(" ").forEach((word, i) => {
-      const span = document.createElement("span");
-      span.className = "word";
-      span.textContent = word;
-      span.style.animationDelay = `${i * 0.4}s`;
-      finalEl.appendChild(span);
-    });
-  }, 1200);
+  finalText.split(" ").forEach((word, i) => {
+    const span = document.createElement("span");
+    span.className = "word";
+    span.textContent = word;
+    span.style.animationDelay = `${i * 0.4}s`;
+    finalEl.appendChild(span);
+  });
 });
 </script>
 
